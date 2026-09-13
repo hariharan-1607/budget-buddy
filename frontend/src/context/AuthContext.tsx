@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 
 interface User {
   id: string;
@@ -25,94 +24,121 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize user immediately from localStorage for persistent seamless sessions
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
+  // Background token verification on app start
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name
-        });
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name
-        });
-      } else {
+    const verifySession = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
         setUser(null);
+        localStorage.removeItem('user');
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
 
-    return () => subscription.unsubscribe();
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        } else if (response.status === 401) {
+          // Only log out if token is genuinely invalid/expired (HTTP 401)
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+        // If server is temporarily unreachable (500, network offline), retain the session
+      } catch (error) {
+        console.warn('Network error checking session, retaining cached session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifySession();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      console.error('Login error details:', error);
-      throw error;
-    }
-
-    if (data.user) {
-      setUser({
-        id: data.user.id,
-        email: data.user.email || '',
-        name: data.user.user_metadata?.name
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msg || data.message || 'Login failed. Please check your credentials.');
+      }
+
+      if (data.token && data.user) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name,
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      },
-    });
-
-    if (error) {
-      console.error('Signup error details:', error);
-      throw error;
-    }
-
-    if (data.user) {
-      setUser({
-        id: data.user.id,
-        email: data.user.email || '',
-        name: data.user.user_metadata?.name
+        body: JSON.stringify({ name, email, password }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msg || data.message || 'Registration failed.');
+      }
+
+      if (data.token && data.user) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+      }
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      throw error;
     }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
-  const getAuthHeaders = () => {
-    // Note: With Supabase client, we usually don't need manual headers for Supabase calls,
-    // but keeping the signature for compatibility if other APIs are used.
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   };
 

@@ -1,0 +1,14 @@
+{
+  "name": "budget-manager-app",
+  "version": "1.0.0",
+  "description": "Fullstack Budget Manager Application with React, Express, and MongoDB",
+  "scripts": {
+    "start": "node backend/server.js",
+    "backend": "node backend/server.js",
+    "frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build"
+  },
+  "keywords": ["budget", "finance", "react", "express", "mongodb"],
+  "author": "",
+  "license": "MIT"
+}
