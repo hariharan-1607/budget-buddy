@@ -6,7 +6,7 @@
     "start": "node backend/server.js",
     "backend": "node backend/server.js",
     "frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build"
+    "build": "npm --prefix frontend install --include=dev && npm --prefix frontend run build"
   },
   "keywords": ["budget", "finance", "react", "express", "mongodb", "vercel"],
   "author": "Hariharan",
