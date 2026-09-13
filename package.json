@@ -1,14 +1,22 @@
 {
-  "name": "budget-manager-app",
+  "name": "budget-buddy-fullstack",
   "version": "1.0.0",
   "description": "Fullstack Budget Manager Application with React, Express, and MongoDB",
   "scripts": {
     "start": "node backend/server.js",
     "backend": "node backend/server.js",
     "frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build"
+    "build": "cd frontend && npm install && npm run build"
   },
-  "keywords": ["budget", "finance", "react", "express", "mongodb"],
-  "author": "",
-  "license": "MIT"
+  "keywords": ["budget", "finance", "react", "express", "mongodb", "vercel"],
+  "author": "Hariharan",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.1"
+  }
 }

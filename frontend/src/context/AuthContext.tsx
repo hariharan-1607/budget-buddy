@@ -23,6 +23,28 @@ export const useAuth = () => {
   return context;
 };
 
+// Safe response parser to avoid "Unexpected token < in JSON at position 0" errors
+const parseApiResponse = async (response: Response) => {
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.msg || data.message || `Request failed with status ${response.status}`);
+    }
+    return data;
+  }
+
+  // If response is HTML or text (e.g. Vercel 404/500/502 gateway error)
+  const text = await response.text();
+  if (response.status === 404) {
+    throw new Error('API endpoint not found (404). Please ensure your Vercel deployment has finished and api/index.js is active.');
+  }
+  if (response.status >= 500) {
+    throw new Error('Database or server error (500). Please verify that MONGO_URI is set in your Vercel project environment variables.');
+  }
+  throw new Error(text.slice(0, 120) || `Server responded with status ${response.status}`);
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Initialize user immediately from localStorage for persistent seamless sessions
   const [user, setUser] = useState<User | null>(() => {
@@ -58,12 +80,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(data.user);
           localStorage.setItem('user', JSON.stringify(data.user));
         } else if (response.status === 401) {
-          // Only log out if token is genuinely invalid/expired (HTTP 401)
+          // Only log out if token is genuinely invalid or expired (HTTP 401)
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
         }
-        // If server is temporarily unreachable (500, network offline), retain the session
       } catch (error) {
         console.warn('Network error checking session, retaining cached session:', error);
       } finally {
@@ -84,11 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || data.message || 'Login failed. Please check your credentials.');
-      }
+      const data = await parseApiResponse(response);
 
       if (data.token && data.user) {
         localStorage.setItem('token', data.token);
@@ -111,11 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || data.message || 'Registration failed.');
-      }
+      const data = await parseApiResponse(response);
 
       if (data.token && data.user) {
         localStorage.setItem('token', data.token);

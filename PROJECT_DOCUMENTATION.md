@@ -1,24 +1,27 @@
 # Budget Buddy - Complete Project Report & Technical Documentation
 
 **Project Name:** Budget Buddy (Personal Budget & Expense Management System)  
-**Architecture:** MERN Stack (MongoDB, Express.js, React, Node.js)  
+**Architecture:** MERN Stack (MongoDB, Express.js, React, Node.js) with Vercel Serverless Support  
 **Repository:** [https://github.com/hariharan-1607/budget-buddy.git](https://github.com/hariharan-1607/budget-buddy.git)  
+**Live Vercel URL:** `https://budgetbuddy-1617.vercel.app`  
 **Author:** Hariharan  
-**Documentation Version:** 2.0 (Updated with MongoDB Integration & Persistent Auth)
+**Documentation Version:** 2.1 (Updated with Vercel Serverless & Cloud MongoDB Migration)
 
 ---
 
 ## Table of Contents
 1. [Executive Summary](#1-executive-summary)
-2. [System Architecture](#2-system-architecture)
+2. [System Architecture (Local & Cloud Serverless)](#2-system-architecture-local--cloud-serverless)
 3. [Technology Stack & Rationale](#3-technology-stack--rationale)
 4. [Project File Structure](#4-project-file-structure)
 5. [End-to-End Data Flow](#5-end-to-end-data-flow)
 6. [Authentication & Session Persistence](#6-authentication--session-persistence)
-7. [Database Guide: Local vs Cloud MongoDB](#7-database-guide-local-vs-cloud-mongodb)
-8. [Comprehensive Interview & Viva Questions & Answers](#8-comprehensive-interview--viva-questions--answers)
-9. [Future Roadmap & Recommended Improvements](#9-future-roadmap--recommended-improvements)
-10. [Local Development & Setup Instructions](#10-local-development--setup-instructions)
+7. [Why the "Unexpected token 'T'..." Error Occurred & How It Is Solved](#7-why-the-unexpected-token-t-error-occurred--how-it-is-solved)
+8. [Step-by-Step Guide: Moving to MongoDB Atlas (Cloud Database)](#8-step-by-step-guide-moving-to-mongodb-atlas-cloud-database)
+9. [Configuring Environment Variables in Vercel Dashboard](#9-configuring-environment-variables-in-vercel-dashboard)
+10. [Comprehensive Interview & Viva Questions & Answers](#10-comprehensive-interview--viva-questions--answers)
+11. [Future Roadmap & Recommended Improvements](#11-future-roadmap--recommended-improvements)
+12. [Local Development & Setup Instructions](#12-local-development--setup-instructions)
 
 ---
 
@@ -26,40 +29,44 @@
 
 **Budget Buddy** is a modern, responsive fullstack web application designed to give users complete control over their personal finances. Users can register securely, log into their accounts, set customized budget caps for different spending categories (e.g., Groceries, Rent, Vacation, Entertainment), track expenses against these budgets in real time, and view remaining balances dynamically.
 
-All data is persistently stored in **MongoDB** through a secure **Express REST API** backend featuring **Bcrypt** password hashing and **JSON Web Token (JWT)** session authorization.
+All data is persistently stored in **MongoDB** (locally on `mongodb://localhost:27017/budgetbuddy` or in the cloud via **MongoDB Atlas**) through a secure **Express REST API** backend featuring **Bcrypt** password hashing and **JSON Web Token (JWT)** session authorization.
 
 ---
 
-## 2. System Architecture
+## 2. System Architecture (Local & Cloud Serverless)
 
+### Local Development Architecture
+```
+React Frontend (Vite on :5173) ──[/api proxy]──> Express Server (:5000) ──> Local MongoDB (:27017)
+```
+
+### Production Vercel Serverless Architecture
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                         CLIENT TIER (React SPA)                        │
+│                        VERCEL EDGE CDN & HOSTING                       │
 │                                                                        │
-│   React 18 + TypeScript + Vite + Tailwind CSS + Lucide Icons           │
-│   ├── Context: AuthContext (Manages User Session & LocalStorage Token) │
-│   ├── Router: React Router DOM (Protected & Public Routes)             │
-│   └── Pages: Home, Login, Signup, Dashboard                            │
+│   Incoming Request: https://budgetbuddy-1617.vercel.app/api/*          │
+│   ├── Static files & React SPA: frontend/dist/                         │
+│   └── Serverless Rewrites: vercel.json                                 │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
-                                    │ HTTP Requests (JSON)
-                                    │ Proxied via Vite (/api/*)
+                                    │ Rewritten to /api/index.js
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        SERVER TIER (Express API)                       │
+│                   VERCEL SERVERLESS FUNCTION (api/index.js)            │
 │                                                                        │
-│   Node.js + Express.js                                                 │
-│   ├── CORS & express.json Middleware                                   │
-│   ├── authMiddleware: JWT Verification & Extraction                    │
-│   ├── /api/auth: Signup, Login, Profile (/me)                          │
-│   └── /api/budgets: CRUD for Budgets & Expenses                        │
+│   • Reuses cached Mongoose connection across warm serverless functions │
+│   • Dispatches request to Express App (backend/server.js)              │
+│   • Middleware: authMiddleware (JWT Verification), CORS, JSON parser   │
+│   • Endpoints: /api/auth/signup, /api/auth/login, /api/budgets         │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
-                                    │ Mongoose ODM
+                                    │ TLS / SSL Connection (SRV)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        DATABASE TIER (MongoDB)                         │
+│                   CLOUD DATABASE (MongoDB Atlas Cluster)               │
 │                                                                        │
+│   Host: cluster0.xxxxx.mongodb.net (Port 27017 / SRV)                  │
 │   Collections:                                                         │
 │   ├── users: { id, name, email, password (hashed), timestamps }        │
 │   └── budgets: { id, userId, name, totalAmount, expenses: [...] }     │
@@ -75,19 +82,19 @@ All data is persistently stored in **MongoDB** through a secure **Express REST A
 | :--- | :--- | :--- |
 | **React 18** | UI Library | Component-driven model, high rendering performance via Virtual DOM, declarative UI updates. |
 | **TypeScript** | Language | Enforces strict type safety for data contracts (User, Budget, Expense), reducing runtime bugs. |
-| **Vite** | Build Tool & Dev Server | Lightning-fast Hot Module Replacement (HMR) and built-in reverse proxy eliminating CORS friction. |
+| **Vite** | Build Tool & Dev Server | Fast Hot Module Replacement (HMR) and built-in reverse proxy eliminating CORS friction. |
 | **Tailwind CSS** | Styling | Utility-first styling framework enabling rapid, highly-responsive, clean design without bloated CSS. |
 | **Framer Motion** | Micro-Animations | Smooth card hover elevations, modal entrances, and page transitions for a premium UX feel. |
-| **Lucide React** | Icons | Lightweight, tree-shakeable SVG icons for intuitive financial actions (`IndianRupee`, `Plus`, `Trash2`, `Edit2`, `Eye`, `EyeOff`). |
+| **Lucide React** | Icons | Crisp, customizable SVG icons (`IndianRupee`, `Plus`, `Trash2`, `Edit2`, `Eye`, `EyeOff`). |
 | **React Router v6** | Client Routing | Declarative routing with protected route guards preventing unauthorized dashboard access. |
 
 ### Backend & Database
 | Technology | Role | Why It Was Chosen |
 | :--- | :--- | :--- |
 | **Node.js** | Runtime | Event-driven, non-blocking asynchronous I/O ideal for handling multiple concurrent REST calls. |
-| **Express.js** | Web Framework | Minimalist, unopinionated routing framework for cleanly mounting RESTful micro-endpoints. |
-| **MongoDB** | Database | NoSQL document database. Naturally handles nested arrays (expenses inside budgets) in a single document. |
-| **Mongoose** | ODM | Elegant object modeling for MongoDB: schema validation, pre-save hooks, and virtual transforms. |
+| **Express.js** | Web Framework | Minimalist routing framework for cleanly mounting RESTful endpoints and exporting as Vercel serverless handler. |
+| **MongoDB / Atlas** | Database | NoSQL document database. Naturally handles nested arrays (expenses inside budgets) in a single atomic document. |
+| **Mongoose** | ODM | Object modeling for MongoDB: schema validation, pre-save hooks, and JSON virtual transforms. |
 | **Bcryptjs** | Security | Cryptographic one-way salted password hashing protecting passwords against rainbow table attacks. |
 | **JSON Web Tokens (JWT)**| Auth Protocol | Stateless, signed authorization tokens eliminating the overhead of server-side session memory. |
 | **dotenv** | Config | Isolates sensitive variables (database URIs, ports, secrets) into `.env` files outside Git. |
@@ -98,9 +105,11 @@ All data is persistently stored in **MongoDB** through a secure **Express REST A
 
 ```
 budget-sample/
+├── api/
+│   └── index.js                  # Vercel Serverless Function entry point
 ├── backend/
 │   ├── config/
-│   │   └── db.js                 # MongoDB Mongoose connection with error handling
+│   │   └── db.js                 # MongoDB Mongoose connection with serverless connection reuse
 │   ├── middleware/
 │   │   └── authMiddleware.js     # JWT extraction & verification guard
 │   ├── models/
@@ -109,17 +118,16 @@ budget-sample/
 │   ├── routes/
 │   │   ├── authRoutes.js         # /api/auth endpoints (signup, login, me)
 │   │   └── budgetRoutes.js       # /api/budgets CRUD endpoints
-│   ├── .env                      # Environment variables (ignored by Git)
+│   ├── .env                      # Local environment variables (ignored by Git)
 │   ├── .env.example              # Sample environment template
-│   ├── package.json              # Backend dependencies and startup scripts
-│   └── server.js                 # Express server entry point & CORS configuration
+│   └── server.js                 # Express server entry point with flexible routing
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Navbar.tsx        # Navigation header with Auth conditional links
 │   │   │   └── Footer.tsx        # Global footer
 │   │   ├── context/
-│   │   │   └── AuthContext.tsx   # Global authentication state, JWT storage & session restoration
+│   │   │   └── AuthContext.tsx   # Auth state, persistent token storage & HTML error interceptor
 │   │   ├── lib/
 │   │   │   └── supabase.ts       # Neutralized stub to eliminate missing-variable crashes
 │   │   ├── pages/
@@ -133,7 +141,8 @@ budget-sample/
 │   ├── .env                      # Frontend environment variable (VITE_API_URL=/api)
 │   ├── package.json              # Frontend dependencies
 │   └── vite.config.ts            # Vite build configuration and /api reverse proxy
-├── package.json                  # Root npm scripts (npm run backend, npm run frontend)
+├── vercel.json                   # Vercel build command, outputDir, and serverless rewrites
+├── package.json                  # Root package.json with backend dependencies for Vercel
 ├── .gitignore                    # Prevents node_modules, logs, and .env leaks
 ├── README.md                     # Project overview
 └── PROJECT_DOCUMENTATION.md      # Comprehensive technical documentation & viva guide
@@ -174,8 +183,7 @@ budget-sample/
 
 ## 6. Authentication & Session Persistence
 
-### Why Websites Stay Logged In
-Traditional simple projects often log the user out after a few minutes or upon a single page refresh. In **Budget Buddy**, authentication has been engineered to mirror commercial production platforms:
+In **Budget Buddy**, session persistence works identically to commercial websites (like GitHub or Google):
 
 1. **30-Day Token Lifespan:**  
    In `backend/routes/authRoutes.js`, the token is issued with `expiresIn: "30d"`. The token remains valid for an entire month without requiring repetitive logins.
@@ -191,80 +199,123 @@ Traditional simple projects often log the user out after a few minutes or upon a
 
 ---
 
-## 7. Database Guide: Local vs Cloud MongoDB
+## 7. Why the "Unexpected token 'T'..." Error Occurred & How It Is Solved
 
-### Current Status
-Your project is currently operating on a **Local MongoDB Service** installed on your system:
+### The Error Observed
+On `https://budgetbuddy-1617.vercel.app/login` and `/signup`:
 ```text
-mongodb://localhost:27017/budgetbuddy
+Unexpected token 'T', "The page c"... is not valid JSON
 ```
+
+### Root Causes
+1. **No Serverless Function Configured on Vercel:**  
+   The GitHub repo had code for the frontend, but did not have an `api/index.js` serverless function or `vercel.json` rewrites. When the deployed frontend sent a request to `/api/auth/signup`, Vercel did not know what to execute and returned its default **HTML 404 error page** beginning with the words:  
+   `The page could not be found...`  
+   The frontend code then called `response.json()`, which crashed trying to parse the character **`T`** of `"The page..."` as JSON.
+
+2. **Local vs Cloud Database:**  
+   Even if the server was reachable, Vercel runs in cloud data centers across the internet. Vercel **cannot connect to `localhost:27017`** on your personal laptop. For Vercel to work, the database must be hosted on **MongoDB Atlas** in the cloud.
+
+### The Solution Implemented
+1. **Created `api/index.js`:** A dedicated entry point for Vercel that connects to MongoDB and serves the Express backend.
+2. **Created `vercel.json`:** Directs `/api/(.*)` requests straight to `/api/index.js` and all other routes to `/index.html`.
+3. **Updated Root `package.json`:** Included `express`, `mongoose`, `jsonwebtoken`, `bcryptjs`, and `cors` so Vercel installs them during build.
+4. **Added `parseApiResponse()` in `AuthContext.tsx`:** Checks the `Content-Type` header before parsing JSON. If a server returns an HTML error (e.g. 404 or 500), it presents a helpful diagnostic message instead of a cryptic JSON syntax error.
 
 ---
 
-### Step-by-Step Migration to Cloud Database (MongoDB Atlas)
+## 8. Step-by-Step Guide: Moving to MongoDB Atlas (Cloud Database)
 
-Migrating to MongoDB Atlas allows your database to live in the cloud, enabling you to deploy your project to Vercel, Render, Railway, or AWS.
+Follow this simple tutorial to create a 100% free Cloud MongoDB database on MongoDB Atlas.
 
-#### Step 1: Create a Free MongoDB Atlas Account
-1. Visit [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas) and sign up.
-2. Under "Deployments", click **Create Deployment**.
-3. Choose the **M0 Free** shared tier.
-4. Select a cloud provider (AWS or Google Cloud) and region closest to you (e.g. `Mumbai - ap-south-1`).
+### Step 1: Sign Up on MongoDB Atlas
+1. Open your browser and go to: **[https://www.mongodb.com/cloud/atlas/register](https://www.mongodb.com/cloud/atlas/register)**
+2. Sign up with your Google account or email.
+
+### Step 2: Create a Free Shared Cluster
+1. After logging in, click **Create** or **Build a Database**.
+2. Select the **M0 Free (Shared)** option (free forever, no credit card required).
+3. Name your cluster (e.g., `Cluster0`).
+4. Select a Cloud Provider & Region closest to you (e.g. **AWS / Mumbai (`ap-south-1`)** or **Singapore**).
 5. Click **Create Deployment**.
 
-#### Step 2: Configure Database User Credentials
-1. In the Security setup modal:
-   - Enter a **Username** (e.g., `budgetAdmin`).
-   - Enter a **Password** (e.g., `SecurePass2026!`). Keep note of this password.
+### Step 3: Create a Database User
+1. In the "Security Quickstart" prompt:
+   - **Username:** enter `budgetUser` (or your preferred name).
+   - **Password:** click "Autogenerate" or enter a secure password (e.g., `BudgetPass2026!`).
+   - **Important:** Copy and save this password in Notepad!
 2. Click **Create Database User**.
 
-#### Step 3: Configure Network Access (IP Whitelist)
-1. Go to **Network Access** in the left sidebar.
-2. Click **Add IP Address**.
-3. Select **Allow Access from Anywhere** (`0.0.0.0/0`) so both your computer and deployment platforms can connect.
-4. Click **Confirm**.
+### Step 4: Configure Network Access (Allow from Anywhere)
+1. In the same prompt, under "Where would you like to connect from?":
+   - Select **Cloud Environment** or click **Add IP Address**.
+   - Enter IP Address: `0.0.0.0/0` (Description: `Allow all for Vercel`).
+   - Click **Add Entry**.
+   *(This ensures both your local computer and Vercel's cloud servers can connect without being blocked by firewalls).*
 
-#### Step 4: Obtain Your Connection String
-1. Go to **Database** -> Click **Connect**.
-2. Select **Drivers** -> Driver: `Node.js`.
-3. Copy the connection string:
+### Step 5: Get Your Connection String
+1. Go to **Database** -> Click the blue **Connect** button on your cluster.
+2. Choose **Drivers** (Node.js).
+3. Under "Install your driver", look at Step 3: "Add your connection string into your application code".
+4. Copy the connection string. It looks like:
    ```text
-   mongodb+srv://budgetAdmin:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority&appName=BudgetCluster
+   mongodb+srv://budgetUser:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+   ```
+5. Replace `<password>` with your actual password (remove the `<` and `>` brackets).
+6. Add `/budgetbuddy` right before the `?` to specify the database name:
+   ```text
+   mongodb+srv://budgetUser:BudgetPass2026!@cluster0.abcde.mongodb.net/budgetbuddy?retryWrites=true&w=majority
    ```
 
-#### Step 5: Update Your Project Configuration
-1. Open `backend/.env`.
-2. Comment out the local MongoDB URI and paste your cloud URI (specifying the database name `budgetbuddy` before the query string):
+### Step 6: Test Locally (Optional but Recommended)
+1. Open `backend/.env` on your computer.
+2. Update the `MONGO_URI` with your new cloud string:
    ```ini
-   # MONGO_URI=mongodb://localhost:27017/budgetbuddy
-   MONGO_URI=mongodb+srv://budgetAdmin:SecurePass2026!@cluster0.abcde.mongodb.net/budgetbuddy?retryWrites=true&w=majority
+   MONGO_URI=mongodb+srv://budgetUser:BudgetPass2026!@cluster0.abcde.mongodb.net/budgetbuddy?retryWrites=true&w=majority
    ```
-3. Restart your backend server (`npm run start`).
-4. Look for the confirmation in your terminal:
+3. Run `npm run backend` and see:
    ```text
    ✅ MongoDB Connected: cluster0-shard-00-00.../budgetbuddy
    ```
-From this point forward, all data will be synchronized in the cloud!
 
 ---
 
-## 8. Comprehensive Interview & Viva Questions & Answers
+## 9. Configuring Environment Variables in Vercel Dashboard
+
+Once you have your MongoDB Atlas connection string, add it to Vercel so your live website connects to it:
+
+1. Log into **[https://vercel.com](https://vercel.com)**.
+2. Click on your project: **`budgetbuddy-1617`** (or `budget-buddy`).
+3. Click the **Settings** tab at the top.
+4. Click **Environment Variables** in the left sidebar menu.
+5. Add the following two variables:
+
+| Variable Key | Value | Notes |
+| :--- | :--- | :--- |
+| **`MONGO_URI`** | `mongodb+srv://budgetUser:BudgetPass2026!@cluster0.abcde.mongodb.net/budgetbuddy?retryWrites=true&w=majority` | Your Cloud MongoDB Atlas URI |
+| **`JWT_SECRET`** | `budget_buddy_production_secret_key_2026_jwt` | Any secure random string (32+ characters) |
+
+6. Click **Save**.
+7. Go to the **Deployments** tab in Vercel, click the three dots (`...`) next to the latest deployment, and click **Redeploy** (or simply push a new commit to GitHub).
+8. Once the build finishes, visit **`https://budgetbuddy-1617.vercel.app/signup`**! You can now sign up, log in, and manage budgets directly from the live web!
+
+---
+
+## 10. Comprehensive Interview & Viva Questions & Answers
 
 ### Architecture & Technology Stack
 
 #### Q1. What architecture does this application follow?
-> **Answer:** It follows a **Three-Tier MERN Architecture**:
+> **Answer:** It follows a **Three-Tier MERN Architecture with Serverless Deployment**:
 > 1. **Presentation Tier:** React SPA (Single Page Application) built with TypeScript and Vite.
-> 2. **Application Tier:** Node.js with Express.js exposing stateless RESTful endpoints.
-> 3. **Data Tier:** MongoDB document database managed via Mongoose ODM.
+> 2. **Application Tier:** Node.js with Express.js exposing stateless RESTful endpoints, deployable both as a traditional Node daemon and as a Vercel Serverless Function via `api/index.js`.
+> 3. **Data Tier:** MongoDB document database (Local or Cloud Atlas) managed via Mongoose ODM.
 
-#### Q2. Why did you choose React with Vite over Create React App (CRA) or Next.js?
-> **Answer:** 
-> - **Over CRA:** Create React App is deprecated by the React team. Vite uses native ES modules (ESM) in development, making server start and hot reloading instantaneous (milliseconds vs minutes with Webpack).
-> - **Over Next.js:** For an authenticated single-page dashboard where SEO is not a priority, a client-side rendered SPA with a separate Express API provides clearer separation of concerns and easier deployment flexibility.
+#### Q2. Why did you choose React with Vite over Create React App (CRA)?
+> **Answer:** Create React App is officially deprecated and relies on Webpack, which bundles the entire application before starting. Vite leverages native ES Modules (ESM) in the browser, making development server startup and Hot Module Replacement (HMR) virtually instantaneous.
 
-#### Q3. Why use TypeScript instead of standard JavaScript?
-> **Answer:** TypeScript provides compile-time type validation. In financial applications, tracking exact types for money (numbers vs strings) and object structures (Budget vs Expense) prevents common runtime bugs like `"1000" + "500" = "1000500"`.
+#### Q3. What is the difference between client-side routing and server-side routing?
+> **Answer:** In server-side routing, every navigation triggers a new HTTP GET request to the server, reloading the entire page. In client-side routing (via `react-router-dom`), navigation is handled by JavaScript updating the DOM dynamically without reloading the browser, providing a seamless desktop-app-like user experience.
 
 ---
 
@@ -281,8 +332,8 @@ From this point forward, all data will be synchronized in the cloud!
 > - **Embedding:** Storing child documents inside the parent document (e.g., `expenses: [ExpenseSchema]` inside `Budget`). Best when child data is always accessed with the parent and doesn't grow indefinitely.
 > - **Referencing:** Storing the `_id` of another document (e.g., `userId: { type: ObjectId, ref: 'User' }` in `Budget`). Best when child data grows unbounded or needs to be queried independently.
 
-#### Q6. What are Mongoose Middleware / Lifecycle Hooks and how are they used here?
-> **Answer:** Mongoose hooks are functions that run automatically before or after certain database actions. In `models/User.js`, we use a `pre('save')` hook. Before saving a user document, it checks `if (!this.isModified('password')) return next();` and automatically salts and hashes the password using Bcrypt.
+#### Q6. How does connection pooling work in Mongoose during serverless deployment?
+> **Answer:** In serverless platforms like Vercel, functions spin down when idle and spin up on demand. If a new database connection is created on every invocation, it exhausts MongoDB's connection pool. We implement connection caching (`if (mongoose.connection.readyState >= 1) return;`) so warm serverless instances reuse existing TCP connections.
 
 ---
 
@@ -308,36 +359,22 @@ From this point forward, all data will be synchronized in the cloud!
 
 ---
 
-### Frontend & State Management
-
-#### Q10. What is React Context API and why was it chosen over Redux?
-> **Answer:** React Context allows sharing global data (like user authentication status and login methods) across the entire component hierarchy without passing props through intermediate components ("prop drilling"). Since the global state of this app is primarily authentication, Context is lightweight and avoids the boilerplate of Redux.
-
-#### Q11. What is the purpose of the Vite Proxy configured in `vite.config.ts`?
-> **Answer:** During development, the frontend runs on port `5173` and the backend on port `5000`. Direct requests from `localhost:5173` to `localhost:5000` would be blocked by browser CORS policies unless headers are set. The Vite proxy intercepts any call starting with `/api` and forwards it to `http://localhost:5000` on the server level, eliminating CORS issues and allowing relative path requests (`/api/budgets`).
-
----
-
-## 9. Future Roadmap & Recommended Improvements
-
-Here are impactful features you can implement next to elevate Budget Buddy to a commercial SaaS product:
+## 11. Future Roadmap & Recommended Improvements
 
 1. **Interactive Charts & Spending Analytics:**
-   - Integrate `Recharts` or `Chart.js` to render visual pie charts for spending by category and bar charts comparing monthly spending against budget caps.
+   - Integrate `Recharts` to render visual pie charts for spending by category and monthly comparison bars.
 2. **Monthly & Custom Date Filters:**
    - Add a month/year selector to allow users to switch between monthly budgets and archive historical records.
 3. **Budget Limit Alerts & Notifications:**
    - Display amber warnings when expenses exceed 80% of the budget and red warnings when the budget is breached.
 4. **Export to CSV and PDF:**
    - Allow users to download printable monthly expense reports or CSV spreadsheets for tax filing.
-5. **Recurring Bills & Auto-Renewing Budgets:**
-   - Enable automated monthly rollover for recurring expenses like Netflix, gym memberships, and rent.
-6. **Receipt Attachment / File Uploads:**
+5. **Receipt Attachment / File Uploads:**
    - Use Cloudinary or AWS S3 to let users snap and attach photos of physical grocery or restaurant receipts.
 
 ---
 
-## 10. Local Development & Setup Instructions
+## 12. Local Development & Setup Instructions
 
 ### Prerequisites
 - **Node.js**: v18 or higher
@@ -355,13 +392,6 @@ Here are impactful features you can implement next to elevate Budget Buddy to a 
    ```bash
    cd backend
    npm install
-   ```
-   Create `backend/.env`:
-   ```ini
-   PORT=5000
-   MONGO_URI=mongodb://localhost:27017/budgetbuddy
-   JWT_SECRET=your_jwt_secret_key
-   NODE_ENV=development
    ```
 
 3. **Frontend Setup:**

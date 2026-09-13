@@ -8,7 +8,7 @@ const budgetRoutes = require("./routes/budgetRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS for frontend Vite dev server (and any local origins)
+// Enable CORS
 app.use(
   cors({
     origin: "*",
@@ -19,19 +19,24 @@ app.use(
 
 app.use(express.json());
 
-// Connect Database
-connectDB();
+// In traditional server mode, initialize connection on boot
+if (!process.env.VERCEL) {
+  connectDB().catch((err) => console.error("Database connection initialization failed:", err.message));
+}
 
-// API Routes
+// API Routes - Mounted with and without /api prefix for maximum Vercel/local flexibility
 app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
+
 app.use("/api/budgets", budgetRoutes);
+app.use("/budgets", budgetRoutes);
 
 // Health check
-app.get("/api/health", (req, res) => {
+app.get(["/api/health", "/health"], (req, res) => {
   res.json({ status: "ok", service: "Budget Buddy Backend", timestamp: new Date() });
 });
 
-app.get("/", (req, res) => {
+app.get(["/api", "/"], (req, res) => {
   res.json({ msg: "Budget Buddy API is running!", status: "ok" });
 });
 
@@ -49,7 +54,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-if (require.main === module) {
+if (require.main === module && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
