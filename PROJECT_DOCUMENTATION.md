@@ -22,6 +22,7 @@
 10. [Comprehensive Interview & Viva Questions & Answers](#10-comprehensive-interview--viva-questions--answers)
 11. [Future Roadmap & Recommended Improvements](#11-future-roadmap--recommended-improvements)
 12. [Local Development & Setup Instructions](#12-local-development--setup-instructions)
+13. [Stitch UI/UX Design System & Screen Specifications](#13-stitch-uiux-design-system--screen-specifications)
 
 ---
 
@@ -414,3 +415,44 @@ Once you have your MongoDB Atlas connection string, add it to Vercel so your liv
 
 5. **Open in Browser:**
    Visit **`http://localhost:5173`** to test registration, login, and budget management!
+
+---
+
+## 13. Stitch UI/UX Design System & Screen Specifications
+
+**Stitch Project ID:** `projects/9762974202711535608`  
+**Project Title:** Budget Buddy Architecture & Audit  
+**Design Theme:** Modern Wealth & Budget Intelligence  
+
+### 13.1 Visual Design Tokens
+- **Primary Color:** `#059669` / `#006948` (Deep Emerald - indicates positive cash flows and primary interactive CTA targets)
+- **Secondary Color:** `#10B981` (Mint Emerald - progress indicators, active badges, surplus metrics)
+- **Tertiary Color:** `#0EA5E9` (Cerulean - secondary signals and recurring debit states)
+- **Neutral Foundation:** `#0F172A` (Midnight Slate - high-contrast text and dark mode card surfaces)
+- **Canvas / Surface:** `#F8FAFC` / `#FFFFFF` (Zero-glare background canvas paired with subtle 1px translucent ghost borders)
+- **Typography:**
+  - **Headings:** *Plus Jakarta Sans* (Contemporary executive curvature and clarity)
+  - **Metrics & Data:** *Inter* with tabular numbers (`font-feature-settings: 'tnum' on, 'cv05' on, 'cv11' on`)
+- **Currency System:** Indian Rupee (`₹`) optical cap-height baseline alignment
+
+### 13.2 Screen Catalog
+
+| Screen ID | Title | Viewport / Dimensions | Description |
+| :--- | :--- | :--- | :--- |
+| `a3e1dee50f494d189d9cfd7b3bfa7738` | Budget Buddy - Mobile Dashboard | `780 x 3918` (Extended Mobile View) | Complete mobile financial dashboard featuring user greeting, 4-tier summary metrics, circular SVG utilization gauge, velocity bento cards, real-time transaction ledger, and modal action overlays. |
+| `9114df2221ae4578bd8593ad6c1e02c4` | Budget Buddy Logo | `512 x 512` (`image/svg+xml`) | Official Budget Buddy vector emblem with deep emerald gradient and financial shield contours. |
+| `33384465d0684e6e8e1e50c6db5d9c67` | Budget Buddy - Mobile Dashboard | `390 x 884` (Compact Viewport) | Standard 390px mobile viewport variant optimized for ergonomic single-hand thumb navigation. |
+
+### 13.3 Core Dashboard Components from Stitch
+1. **Quick Action Header:** "Good evening, Hariharan" with "+ New Expense" and "+ Budget" quick entry triggers.
+2. **Four-Quadrant Metric Deck:**
+   - **Total Allocated:** Aggregated monthly allowance (`₹50,000`).
+   - **Total Spent:** Current total outflow (`₹31,500`).
+   - **Remaining Liquidity:** Safe-to-spend buffer (`₹18,500`).
+   - **Spend Utilization Gauge:** Radial progress ring displaying utilization velocity (`63%`).
+3. **Pacing Bento Grid:** Highlights peak single transaction and top velocity expense category.
+4. **Dynamic Progress Thresholds:**
+   - `0% - 79%`: Mint Emerald (`#10B981`)
+   - `80% - 99%`: Warning Amber (`#F59E0B`)
+   - `100%+`: Critical Rose-Crimson (`#EF4444`)
+
