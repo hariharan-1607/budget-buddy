@@ -8,7 +8,7 @@ const connectDB = async () => {
     return mongoose.connection;
   }
 
-  const uri = process.env.MONGO_URI || "mongodb://localhost:27017/budgetbuddy";
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/budgetbuddy";
 
   try {
     const conn = await mongoose.connect(uri, {
