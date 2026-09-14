@@ -8,7 +8,7 @@ const connectDB = async () => {
     return mongoose.connection;
   }
 
-  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/budgetbuddy";
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb+srv://haribala112006:Hari2006@budget-cluster.tuh3nho.mongodb.net/budgetbuddy?appName=Budget-Cluster";
 
   try {
     const conn = await mongoose.connect(uri, {

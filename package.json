@@ -6,8 +6,8 @@
     "start": "node backend/server.js",
     "backend": "node backend/server.js",
     "frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend install --include=dev && npm --prefix frontend run build && node copy-dist.js",
-    "vercel-build": "npm --prefix frontend install --include=dev && npm --prefix frontend run build && node copy-dist.js"
+    "build": "npm install && npm --prefix frontend install --include=dev && npm --prefix frontend run build && node copy-dist.js",
+    "vercel-build": "npm install && npm --prefix frontend install --include=dev && npm --prefix frontend run build && node copy-dist.js"
   },
   "keywords": ["budget", "finance", "react", "express", "mongodb", "vercel"],
   "author": "Hariharan",

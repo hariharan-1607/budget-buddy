@@ -435,13 +435,14 @@ Once you have your MongoDB Atlas connection string, add it to Vercel so your liv
   - **Metrics & Data:** *Inter* with tabular numbers (`font-feature-settings: 'tnum' on, 'cv05' on, 'cv11' on`)
 - **Currency System:** Indian Rupee (`₹`) optical cap-height baseline alignment
 
-### 13.2 Screen Catalog
+### 13.2 Screen Catalog (Updated from Stitch)
 
 | Screen ID | Title | Viewport / Dimensions | Description |
 | :--- | :--- | :--- | :--- |
-| `a3e1dee50f494d189d9cfd7b3bfa7738` | Budget Buddy - Mobile Dashboard | `780 x 3918` (Extended Mobile View) | Complete mobile financial dashboard featuring user greeting, 4-tier summary metrics, circular SVG utilization gauge, velocity bento cards, real-time transaction ledger, and modal action overlays. |
-| `9114df2221ae4578bd8593ad6c1e02c4` | Budget Buddy Logo | `512 x 512` (`image/svg+xml`) | Official Budget Buddy vector emblem with deep emerald gradient and financial shield contours. |
-| `33384465d0684e6e8e1e50c6db5d9c67` | Budget Buddy - Mobile Dashboard | `390 x 884` (Compact Viewport) | Standard 390px mobile viewport variant optimized for ergonomic single-hand thumb navigation. |
+| `81228d9539ab4539a36ae6b868b90974` | **Budget Buddy - Desktop Web Dashboard** | `2560 x 3700` (Ultra-wide Desktop View) | High-resolution executive desktop workspace featuring multi-column analytics, full transactions ledger, budget burn-rate graphs, spending velocity bento modules, and quick modals. |
+| `4124ca3af27b4b7cb2b095bcdbad0ea9` | **Budget Buddy Logo - Clean Graph Focus** | `400 x 400` (`image/svg+xml`) | Modern minimalist emblem combining ascending chart bars, currency contours, and emerald gradient accents. |
+| `198f8bfe8fda44a5bf215cf0def9fb80` | **Budget Buddy - Mobile Dashboard** | `780 x 3694` (Refined Mobile View) | Complete mobile financial experience with sticky header, 4-stat metric deck, circular utilization ring, category burn bars, and bottom action bar. |
+| `33384465d0684e6e8e1e50c6db5d9c67` | **Budget Buddy - Mobile Dashboard (Compact)** | `390 x 884` (Standard Mobile Viewport) | 390px mobile viewport optimized for single-hand touch interaction and scroll performance. |
 
 ### 13.3 Core Dashboard Components from Stitch
 1. **Quick Action Header:** "Good evening, Hariharan" with "+ New Expense" and "+ Budget" quick entry triggers.
