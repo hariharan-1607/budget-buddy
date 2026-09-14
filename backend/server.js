@@ -19,6 +19,30 @@ app.use(
 
 app.use(express.json());
 
+// URL normalization middleware for Vercel rewrites
+app.use((req, res, next) => {
+  if (req.url.startsWith("/api/index.js")) {
+    req.url = req.url.replace("/api/index.js", "/api");
+  } else if (req.url.startsWith("/index.js")) {
+    req.url = req.url.replace("/index.js", "/api");
+  }
+  next();
+});
+
+// Database connection middleware (ensures active connection in Vercel serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("Database connection error in middleware:", err.message);
+    return res.status(500).json({
+      msg: "Database connection failed. Please ensure MONGO_URI is configured in Vercel Environment Variables.",
+      error: err.message,
+    });
+  }
+});
+
 // In traditional server mode, initialize connection on boot
 if (!process.env.VERCEL) {
   connectDB().catch((err) => console.error("Database connection initialization failed:", err.message));
